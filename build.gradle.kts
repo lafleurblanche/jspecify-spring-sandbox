@@ -3,6 +3,12 @@ plugins {
     kotlin("plugin.spring") version "2.3.21"
     id("org.springframework.boot") version "4.1.2"
     id("io.spring.dependency-management") version "1.1.7"
+
+    // ドキュメント生成 (Dokka)
+    id("org.jetbrains.dokka") version "2.0.0"
+
+    // 静的解析 & コードフォーマット
+    id("com.diffplug.spotless") version "7.0.2"
 }
 
 group = "net.konohana.sakuya.sandbox"
@@ -20,6 +26,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("tools.jackson.module:jackson-module-kotlin")
 
@@ -42,6 +49,30 @@ kotlin {
                 "-Xannotation-default-target=param-property"
             )
         )
+    }
+}
+
+dokka {
+    moduleName.set("jspecify-spring-sandbox")
+    dokkaPublications.html {
+        outputDirectory.set(layout.buildDirectory.dir("dokka/html"))
+    }
+}
+
+// Spotless 設定 (Java と Kotlin のスタイルを統一)
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+    java {
+        target("src/**/*.java")
+        googleJavaFormat()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
     }
 }
 
