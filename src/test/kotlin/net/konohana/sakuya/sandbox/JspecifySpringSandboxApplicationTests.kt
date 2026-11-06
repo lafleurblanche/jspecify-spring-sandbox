@@ -1,15 +1,24 @@
 package net.konohana.sakuya.sandbox
 
 import net.konohana.sakuya.sandbox.domain.FareCalculationEngine
+import net.konohana.sakuya.sandbox.domain.InMemoryTicketRepository
+import net.konohana.sakuya.sandbox.models.IssueTicketRequest
 import net.konohana.sakuya.sandbox.models.LegacyStationDto
+import net.konohana.sakuya.sandbox.services.StationExternalLookupService
 import net.konohana.sakuya.sandbox.services.TicketIssueService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
+/**
+ * JSpecify による Null 契約および Java ⇄ Kotlin 境界におけるプラットフォーム型排除の検証テスト。
+ */
 class JSpecifyNullnessContractTest {
 
-    private val ticketIssueService = TicketIssueService()
+    // 依存関係を明示的にインスタンス化して注入
+    private val ticketRepository = InMemoryTicketRepository()
+    private val stationLookupService = StationExternalLookupService()
+    private val ticketIssueService = TicketIssueService(ticketRepository, stationLookupService)
 
     @Test
     fun `FareCalculationEngine formatTicketCode returns non-null String`() {
@@ -53,16 +62,18 @@ class JSpecifyNullnessContractTest {
 
     @Test
     fun `TicketIssueService integration works without platform type leaks`() {
-        val result = ticketIssueService.issueTicket(
+        // 最新の DTO 引数仕様に合わせて呼び出し
+        val request = IssueTicketRequest(
             prefix = "QCTTTHB",
-            sequenceNo = 456,
             distanceKm = 8,
             staCode = "FRTHB00102",
             customBaseFare = null,
         )
+        val result = ticketIssueService.processIssue(request)
 
-        assertEquals("QCTTTHB00456OW", result.ticketId)
+        assertEquals("QCTTTHB00001OW", result.ticketId)
         assertEquals(660, result.fare)
         assertEquals("02", result.stationSuffix)
+        assertEquals("STA-FRTHB00102", result.stationId)
     }
 }
