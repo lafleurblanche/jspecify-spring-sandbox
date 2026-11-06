@@ -1,7 +1,7 @@
 package net.konohana.sakuya.sandbox.services
 
 import org.springframework.stereotype.Service
-import net.konohana.sakuya.sandbox.FareCalculationEngine
+import net.konohana.sakuya.sandbox.domain.FareCalculationEngine
 import net.konohana.sakuya.sandbox.models.TicketIssueResult
 
 @Service

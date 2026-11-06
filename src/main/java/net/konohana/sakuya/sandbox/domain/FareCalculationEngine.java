@@ -1,4 +1,4 @@
-package net.konohana.sakuya.sandbox;
+package net.konohana.sakuya.sandbox.domain;
 
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.Nullable;
