@@ -39,4 +39,37 @@ public final class KotlinBridgeConsumer {
         //
         // generator.internalKotlinDsl(() -> {});
     }
+
+    /**
+     * @JvmField の直接フィールドアクセス検証
+     */
+    public static String verifyJvmFieldAccess(TicketDirectAccessDto dto) {
+        // 1. 通常プロパティは Getter を経由
+        String normal = dto.getNormalField();
+
+        // 2. @JvmField 付与プロパティは Getter が存在せず、直接フィールドアクセス
+        // [コンパイルエラー検証] dto.getDirectReadOnlyField(); // cannot find symbol
+        String readOnly = dto.directReadOnlyField;
+
+        // 3. var の @JvmField はフィールドへの直接再代入が可能
+        dto.directMutableField = "MODIFIED_DIRECTLY";
+        String mutable = dto.directMutableField;
+
+        // 4. Companion 内の @JvmField は static フィールドとして参照可能
+        String staticPrefix = TicketDirectAccessDto.STATIC_PREFIX;
+
+        return normal + ":" + readOnly + ":" + mutable + ":" + staticPrefix;
+    }
+
+    /**
+     * @JvmInline (Value Class) の Java からの呼び出し検証
+     */
+    public static String verifyValueClassInvocation(StationRouteResolver resolver, String rawId) {
+        // @JvmName("resolveByRawStationId") を付与したメソッドは、
+        // Value Class が展開された生の値（String）をそのまま渡して呼べる
+        return resolver.resolveByRawStationId(rawId);
+
+        // ※ アノテーションなしの resolver.resolve(...) は Java から見ると
+        // "resolve-XXXX(String)" のようにマングリングされているため、Java 側から直感的には呼べない
+    }
 }
