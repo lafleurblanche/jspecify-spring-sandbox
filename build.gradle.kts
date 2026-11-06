@@ -59,21 +59,37 @@ dokka {
     }
 }
 
-// Spotless 設定 (Java と Kotlin のスタイルを統一)
+// Spotless 設定
 spotless {
     kotlin {
         target("src/**/*.kt")
-        ktlint()
+        // 最新の安定版 ktlint バージョンを指定
+        ktlint("1.5.0").editorConfigOverride(
+            mapOf(
+                "ktlint_standard_no-wildcard-imports" to "disabled",
+                "ktlint_standard_filename" to "disabled"
+            )
+        )
         trimTrailingWhitespace()
         endWithNewline()
     }
     java {
         target("src/**/*.java")
-        googleJavaFormat()
+        // Google Java Format (Java 21/25 対応の 1.25.0 以降を指定)
+        googleJavaFormat("1.25.2")
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()
     }
+}
+
+// ./gradlew check 実行時に spotlessCheck も自動実行
+tasks.named("check") {
+    dependsOn(tasks.named("spotlessCheck"))
+}
+
+tasks.named<org.gradle.api.tasks.testing.Test>("test") {
+    useJUnitPlatform()
 }
 
 tasks.named<org.gradle.api.tasks.testing.Test>("test") {
