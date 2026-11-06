@@ -1,18 +1,33 @@
 package net.konohana.sakuya.sandbox.bridge
 
 /**
- * value class を引数に取るサービスクラス
- * Java から呼ぶ際、メソッド名がマングリングされる挙動を検証
+ * [StationId] の解決処理を提供するサービスクラス。
+ *
+ * Value Class を引数に取るメソッドの Java 相互運用における名前マングリング挙動、
+ * および `@JvmName` による明示的シグネチャの公開を検証します。
  */
 class StationRouteResolver {
 
-    // Kotlin 側: resolve(id: StationId): String
-    // Java バイトコード側: resolve-[mangledHash](String id) になる
+    /**
+     * Kotlin 側から呼び出すための標準ルート解決メソッド。
+     *
+     * Java バイトコード上ではメソッド名がマングリング（ハッシュ付与）されます。
+     *
+     * @param id 解決対象の駅識別子
+     * @return 解決されたルート文字列
+     */
     fun resolve(id: StationId): String {
         return "ROUTE-FOR-${id.formatted()}"
     }
 
-    // Java から素直に呼びたい場合、@JvmName でマングリングを無効化してプレーンな Java メソッド名を与える
+    /**
+     * Java 側から名前マングリングを回避して直接呼び出すためのメソッド。
+     *
+     * バイトコード上は `resolveByRawStationId(String)` として公開されます。
+     *
+     * @param id 解決対象の駅識別子
+     * @return 解決されたルート文字列
+     */
     @JvmName("resolveByRawStationId")
     fun resolveWithExplicitName(id: StationId): String {
         return "EXPLICIT-FOR-${id.formatted()}"

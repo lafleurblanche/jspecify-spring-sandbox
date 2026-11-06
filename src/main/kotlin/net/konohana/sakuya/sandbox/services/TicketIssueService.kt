@@ -1,32 +1,51 @@
 package net.konohana.sakuya.sandbox.services
 
-import org.springframework.stereotype.Service
+import net.konohana.sakuya.sandbox.bridge.StationId
 import net.konohana.sakuya.sandbox.domain.FareCalculationEngine
-import net.konohana.sakuya.sandbox.models.TicketIssueResult
+import net.konohana.sakuya.sandbox.domain.InMemoryTicketRepository
+import net.konohana.sakuya.sandbox.models.IssueTicketRequest
+import net.konohana.sakuya.sandbox.models.IssueTicketResponse
+import org.springframework.stereotype.Service
 
+/**
+ * 発券業務のオーケストレーションを行うアプリケーションサービス。
+ *
+ * Java 側純粋計算層（JSpecify による Non-Null 保証）、インライン値クラス（[StationId]）、
+ * およびインメモリ状態管理の連携を担います。
+ *
+ * @property ticketRepository インメモリチケット採番・保持リポジトリ
+ * @property stationLookupService 外部駅情報検証サービススタブ
+ */
 @Service
-class TicketIssueService {
+class TicketIssueService(
+    private val ticketRepository: InMemoryTicketRepository,
+    private val stationLookupService: StationExternalLookupService,
+) {
 
-    fun issueTicket(
-        prefix: String,
-        sequenceNo: Int,
-        distanceKm: Int,
-        staCode: String,
-        customBaseFare: Int? = null,
-    ): TicketIssueResult {
-        // Java側が @NullMarked のため、ticketId はプラットフォーム型（String!）ではなく非nullの String
-        val ticketId: String = FareCalculationEngine.formatTicketCode(prefix, sequenceNo)
+    /**
+     * 発券要求を受け付け、バリデーション・運賃計算・採番・保存を一括実行します。
+     *
+     * @param request 発券リクエスト DTO
+     * @return 発券結果レスポンス DTO
+     */
+    fun processIssue(request: IssueTicketRequest): IssueTicketResponse {
+        val stationId = StationId(request.staCode)
+        stationLookupService.verifyStation(stationId)
 
-        // 第2引数は @Nullable なので、Kotlin の Int? がそのままスムーズに渡せる
-        val fare: Int = FareCalculationEngine.calculateTotalFare(distanceKm, customBaseFare)
+        val seqNo = ticketRepository.nextSequence()
 
-        // extractStationSuffix は @Nullable なので、戻り値型は厳密に String?
-        val suffix: String? = FareCalculationEngine.extractStationSuffix(staCode)
+        // Java @NullMarked により ticketId は厳格な String（プラットフォーム型ではない）
+        val ticketId: String = FareCalculationEngine.formatTicketCode(request.prefix, seqNo)
+        val fare: Int = FareCalculationEngine.calculateTotalFare(request.distanceKm, request.customBaseFare)
+        val suffix: String? = FareCalculationEngine.extractStationSuffix(request.staCode)
 
-        return TicketIssueResult(
+        ticketRepository.save(ticketId, request.staCode)
+
+        return IssueTicketResponse(
             ticketId = ticketId,
             fare = fare,
             stationSuffix = suffix ?: "00",
+            stationId = stationId.formatted(),
         )
     }
 }
