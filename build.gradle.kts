@@ -3,6 +3,12 @@ plugins {
     kotlin("plugin.spring") version "2.3.21"
     id("org.springframework.boot") version "4.1.2"
     id("io.spring.dependency-management") version "1.1.7"
+
+    // ドキュメント生成 (Dokka)
+    id("org.jetbrains.dokka") version "2.0.0"
+
+    // 静的解析 & コードフォーマット
+    id("com.diffplug.spotless") version "7.0.2"
 }
 
 group = "net.konohana.sakuya.sandbox"
@@ -20,6 +26,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("tools.jackson.module:jackson-module-kotlin")
 
@@ -43,6 +50,46 @@ kotlin {
             )
         )
     }
+}
+
+dokka {
+    moduleName.set("jspecify-spring-sandbox")
+    dokkaPublications.html {
+        outputDirectory.set(layout.buildDirectory.dir("dokka/html"))
+    }
+}
+
+// Spotless 設定
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        // 最新の安定版 ktlint バージョンを指定
+        ktlint("1.5.0").editorConfigOverride(
+            mapOf(
+                "ktlint_standard_no-wildcard-imports" to "disabled",
+                "ktlint_standard_filename" to "disabled"
+            )
+        )
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+    java {
+        target("src/**/*.java")
+        // Google Java Format (Java 21/25 対応の 1.25.0 以降を指定)
+        googleJavaFormat("1.25.2")
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+// ./gradlew check 実行時に spotlessCheck も自動実行
+tasks.named("check") {
+    dependsOn(tasks.named("spotlessCheck"))
+}
+
+tasks.named<org.gradle.api.tasks.testing.Test>("test") {
+    useJUnitPlatform()
 }
 
 tasks.named<org.gradle.api.tasks.testing.Test>("test") {
