@@ -1,6 +1,7 @@
 package net.konohana.sakuya.sandbox.bridge;
 
 import java.util.List;
+import java.util.Optional;
 
 public final class KotlinBridgeConsumer {
 
@@ -71,5 +72,18 @@ public final class KotlinBridgeConsumer {
 
         // ※ アノテーションなしの resolver.resolve(...) は Java から見ると
         // "resolve-XXXX(String)" のようにマングリングされているため、Java 側から直感的には呼べない
+    }
+
+    /**
+     * @JvmName("queryStationAsOptional") を付与した Kotlin メソッドを Java から呼び出す検証。
+     * Kotlin 側の findStationNameAsOptional という定義名ではなく、
+     * @JvmName で指定した queryStationAsOptional(String) として参照・呼出できることを確認する。
+     *
+     * @param bridge  ブリッジインスタンス
+     * @param staCode 駅コード
+     * @return 取得した駅名 Optional
+     */
+    public static Optional<String> callBridgeAsOptional(StationLookupBridge bridge, String staCode) {
+        return bridge.queryStationAsOptional(staCode);
     }
 }
