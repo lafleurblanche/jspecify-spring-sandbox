@@ -1,6 +1,7 @@
 package net.konohana.sakuya.sandbox
 
 import java.util.Optional
+import net.konohana.sakuya.sandbox.bridge.KotlinBridgeConsumer
 import net.konohana.sakuya.sandbox.bridge.OptionalExtensions
 import net.konohana.sakuya.sandbox.bridge.StationLookupBridge
 import net.konohana.sakuya.sandbox.bridge.toNullable
@@ -68,13 +69,17 @@ class OptionalInteroperabilityContractTest {
     }
 
     @Test
-    fun `verify Kotlin facade returning Optional integrates cleanly`() {
-        // Kotlin 側で String? から変換して返された Optional を受領
-        val presentResult: Optional<String> = bridge.queryStationAsOptional("FRTHB00101")
+    fun `verify Kotlin facade returning Optional integrates cleanly via Java consumer`() {
+        // 1. Kotlin 側からは通常のメソッド (findStationName: String?) として呼べる
+        val kotlinResult: String? = bridge.findStationName("FRTHB00101")
+        assertEquals("Verified-01", kotlinResult)
+
+        // 2. Java 側 (KotlinBridgeConsumer) から @JvmName("queryStationAsOptional") 経由で呼べることを検証
+        val presentResult: Optional<String> = KotlinBridgeConsumer.callBridgeAsOptional(bridge, "FRTHB00101")
         assertTrue(presentResult.isPresent)
         assertEquals("Verified-01", presentResult.get())
 
-        val emptyResult: Optional<String> = bridge.queryStationAsOptional("INVALID_PREFIX")
+        val emptyResult: Optional<String> = KotlinBridgeConsumer.callBridgeAsOptional(bridge, "INVALID_PREFIX")
         assertFalse(emptyResult.isPresent)
         assertNull(emptyResult.toNullable())
     }

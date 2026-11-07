@@ -8,9 +8,12 @@ import java.util.Optional
 class StationLookupBridge {
 
     /**
-     * Kotlin 側内部メソッド（Null 許容型を返却）。
+     * Kotlin 側標準メソッド（Null 許容型を返却）。
+     *
+     * @param staCode 対象駅コード
+     * @return 駅名。対象外プレフィックスの場合は null
      */
-    fun queryInternal(staCode: String): String? {
+    fun findStationName(staCode: String): String? {
         return if (staCode.startsWith("FRTHB")) {
             "Verified-${staCode.takeLast(2)}"
         } else {
@@ -21,13 +24,14 @@ class StationLookupBridge {
     /**
      * Java 呼び出し向けファサードメソッド。
      *
-     * `@JvmName` を付与し、Kotlin の [String]? を [Optional] にラップして返却します。
+     * バイトコード上の名称を `@JvmName("queryStationAsOptional")` に変更し、
+     * Java 側から [Optional] を返す明示的な API として公開します。
      *
      * @param staCode 対象駅コード
      * @return 駅名を含む [Optional]
      */
     @JvmName("queryStationAsOptional")
-    fun queryStationAsOptional(staCode: String): Optional<String> {
-        return queryInternal(staCode).toOptional()
+    fun findStationNameAsOptional(staCode: String): Optional<String> {
+        return findStationName(staCode).toOptional()
     }
 }
