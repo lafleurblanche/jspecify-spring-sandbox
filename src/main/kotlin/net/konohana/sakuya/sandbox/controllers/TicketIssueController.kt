@@ -1,14 +1,14 @@
 package net.konohana.sakuya.sandbox.controllers
 
+import net.konohana.sakuya.sandbox.models.IssueTicketRequest
+import net.konohana.sakuya.sandbox.models.IssueTicketResponse
+import net.konohana.sakuya.sandbox.services.TicketIssueService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import net.konohana.sakuya.sandbox.models.IssueTicketRequest
-import net.konohana.sakuya.sandbox.models.IssueTicketResponse
-import net.konohana.sakuya.sandbox.services.TicketIssueService
 
 /**
  * チケット発券エンドポイントを提供する REST コントローラー。

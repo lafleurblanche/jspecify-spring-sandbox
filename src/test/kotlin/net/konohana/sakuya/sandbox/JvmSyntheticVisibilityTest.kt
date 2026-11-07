@@ -22,7 +22,7 @@ class JvmSyntheticVisibilityTest {
         // このフラグがあるため、javac はこのメソッドを「存在しないもの」として扱い、Java からの参照を拒絶する
         assertTrue(
             syntheticMethod!!.isSynthetic,
-            "internalKotlinDsl は @JvmSynthetic により isSynthetic が true でなければならない"
+            "internalKotlinDsl は @JvmSynthetic により isSynthetic が true でなければならない",
         )
     }
 
@@ -37,7 +37,7 @@ class JvmSyntheticVisibilityTest {
         // 通常のメソッドは isSynthetic が false（Java から通常通り参照可能）
         assertFalse(
             normalMethod!!.isSynthetic,
-            "通常のメソッドは isSynthetic が false であるべき"
+            "通常のメソッドは isSynthetic が false であるべき",
         )
     }
 

@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class JspecifySpringSandboxApplication
 
 fun main(args: Array<String>) {
-	runApplication<JspecifySpringSandboxApplication>(*args)
+    runApplication<JspecifySpringSandboxApplication>(*args)
 }

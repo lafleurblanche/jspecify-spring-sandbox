@@ -76,7 +76,6 @@ spotless {
     java {
         target("src/**/*.java")
         // Google Java Format (Java 21/25 対応の 1.25.0 以降を指定)
-        googleJavaFormat("1.25.2")
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()

@@ -16,9 +16,7 @@ class StationRouteResolver {
      * @param id 解決対象の駅識別子
      * @return 解決されたルート文字列
      */
-    fun resolve(id: StationId): String {
-        return "ROUTE-FOR-${id.formatted()}"
-    }
+    fun resolve(id: StationId): String = "ROUTE-FOR-${id.formatted()}"
 
     /**
      * Java 側から名前マングリングを回避して直接呼び出すためのメソッド。
@@ -29,7 +27,5 @@ class StationRouteResolver {
      * @return 解決されたルート文字列
      */
     @JvmName("resolveByRawStationId")
-    fun resolveWithExplicitName(id: StationId): String {
-        return "EXPLICIT-FOR-${id.formatted()}"
-    }
+    fun resolveWithExplicitName(id: StationId): String = "EXPLICIT-FOR-${id.formatted()}"
 }
