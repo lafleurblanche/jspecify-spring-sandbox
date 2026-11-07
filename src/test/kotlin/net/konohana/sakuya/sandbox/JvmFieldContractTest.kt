@@ -1,6 +1,5 @@
 package net.konohana.sakuya.sandbox
 
-import java.lang.reflect.Modifier
 import net.konohana.sakuya.sandbox.bridge.KotlinBridgeConsumer
 import net.konohana.sakuya.sandbox.bridge.TicketDirectAccessDto
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -8,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.lang.reflect.Modifier
 
 class JvmFieldContractTest {
 

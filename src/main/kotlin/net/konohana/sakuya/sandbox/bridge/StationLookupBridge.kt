@@ -13,12 +13,10 @@ class StationLookupBridge {
      * @param staCode 対象駅コード
      * @return 駅名。対象外プレフィックスの場合は null
      */
-    fun findStationName(staCode: String): String? {
-        return if (staCode.startsWith("FRTHB")) {
-            "Verified-${staCode.takeLast(2)}"
-        } else {
-            null
-        }
+    fun findStationName(staCode: String): String? = if (staCode.startsWith("FRTHB")) {
+        "Verified-${staCode.takeLast(2)}"
+    } else {
+        null
     }
 
     /**
@@ -31,7 +29,5 @@ class StationLookupBridge {
      * @return 駅名を含む [Optional]
      */
     @JvmName("queryStationAsOptional")
-    fun findStationNameAsOptional(staCode: String): Optional<String> {
-        return findStationName(staCode).toOptional()
-    }
+    fun findStationNameAsOptional(staCode: String): Optional<String> = findStationName(staCode).toOptional()
 }

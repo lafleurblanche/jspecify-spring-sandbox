@@ -13,7 +13,7 @@ class TicketDirectAccessDto(
 
     // var に付与: Getter/Setter が生成されず、Java から public String として直接代入可能
     @JvmField
-    var directMutableField: String = "DIRECT_MUTABLE"
+    var directMutableField: String = "DIRECT_MUTABLE",
 ) {
     companion object {
         // companion object 内のプロパティ

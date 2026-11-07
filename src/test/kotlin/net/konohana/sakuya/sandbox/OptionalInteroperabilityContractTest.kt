@@ -1,6 +1,5 @@
 package net.konohana.sakuya.sandbox
 
-import java.util.Optional
 import net.konohana.sakuya.sandbox.bridge.KotlinBridgeConsumer
 import net.konohana.sakuya.sandbox.bridge.OptionalExtensions
 import net.konohana.sakuya.sandbox.bridge.StationLookupBridge
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.util.Optional
 
 /**
  * Java ドメイン層の [Optional] と Kotlin の Null 許容型（[T]?）の相互運用検証テスト。

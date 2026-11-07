@@ -1,5 +1,6 @@
 package net.konohana.sakuya.sandbox.controllers
 
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -11,7 +12,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.junit.jupiter.api.Test
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,7 +34,7 @@ class TicketIssueControllerTest {
         mockMvc.perform(
             post("/api/tickets/issue")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(payload)
+                .content(payload),
         )
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.ticketId").isString)
@@ -58,7 +58,7 @@ class TicketIssueControllerTest {
         mockMvc.perform(
             post("/api/tickets/issue")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidPayload)
+                .content(invalidPayload),
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.status").value(400))
@@ -71,7 +71,7 @@ class TicketIssueControllerTest {
         mockMvc.perform(
             options("/api/tickets/issue")
                 .header(HttpHeaders.ORIGIN, "http://localhost:3000")
-                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"),
         )
             .andExpect(status().isOk)
             .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000"))

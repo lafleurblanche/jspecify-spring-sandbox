@@ -3,14 +3,10 @@ package net.konohana.sakuya.sandbox.bridge
 class TicketCodeGenerator {
 
     companion object {
-        fun generateDefault(prefix: String): String {
-            return "${prefix}00000OW"
-        }
+        fun generateDefault(prefix: String): String = "${prefix}00000OW"
 
         @JvmStatic
-        fun generateDirect(prefix: String): String {
-            return "${prefix}99999OW"
-        }
+        fun generateDirect(prefix: String): String = "${prefix}99999OW"
     }
 
     @JvmOverloads

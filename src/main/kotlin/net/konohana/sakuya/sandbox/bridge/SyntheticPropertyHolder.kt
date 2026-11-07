@@ -14,5 +14,5 @@ class SyntheticPropertyHolder(
     var completelyHiddenProperty: String = "HIDDEN",
 
     @get:JvmSynthetic
-    val hiddenValProperty: String = "HIDDEN_VAL"
+    val hiddenValProperty: String = "HIDDEN_VAL",
 )

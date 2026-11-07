@@ -36,8 +36,15 @@ dependencies {
     // JetBrains Annotations (@Contract, pure=true 用)
     compileOnly("org.jetbrains:annotations:26.0.2")
 
+    // Kotlin Coroutines & Reactive Streams 統合
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.10.1")
+
+    // テスト関連
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -76,7 +83,6 @@ spotless {
     java {
         target("src/**/*.java")
         // Google Java Format (Java 21/25 対応の 1.25.0 以降を指定)
-        googleJavaFormat("1.25.2")
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()
