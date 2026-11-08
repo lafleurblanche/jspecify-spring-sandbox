@@ -1,13 +1,13 @@
 package net.konohana.sakuya.sandbox.services
 
 import kotlinx.coroutines.flow.Flow
+import net.konohana.sakuya.sandbox.models.StationCatalogEntry
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBodyOrNull
 import org.springframework.web.reactive.function.client.bodyToFlow
-import net.konohana.sakuya.sandbox.models.StationCatalogEntry
 
 /**
  * [WebClient] と Kotlin Coroutines ([suspend] / [Flow]) を統合した非同期カタログ照会サービス。
@@ -30,16 +30,14 @@ class StationAsyncCatalogService(
      * @param staCode 検索対象の駅コード
      * @return 取得した駅情報。存在しない場合は null
      */
-    suspend fun fetchStationByCode(staCode: String): StationCatalogEntry? {
-        return try {
-            webClient.get()
-                .uri("/api/v1/stations/{staCode}", staCode)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .awaitBodyOrNull<StationCatalogEntry>()
-        } catch (ex: WebClientResponseException.NotFound) {
-            null
-        }
+    suspend fun fetchStationByCode(staCode: String): StationCatalogEntry? = try {
+        webClient.get()
+            .uri("/api/v1/stations/{staCode}", staCode)
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .awaitBodyOrNull<StationCatalogEntry>()
+    } catch (ex: WebClientResponseException.NotFound) {
+        null
     }
 
     /**
@@ -50,11 +48,9 @@ class StationAsyncCatalogService(
      * @param sectorCode 系統識別コード (例: "THB")
      * @return 駅情報の非同期ストリーム [Flow]
      */
-    fun streamStationsBySector(sectorCode: String): Flow<StationCatalogEntry> {
-        return webClient.get()
-            .uri("/api/v1/stations/stream?sector={sector}", sectorCode)
-            .accept(MediaType.APPLICATION_NDJSON, MediaType.APPLICATION_JSON)
-            .retrieve()
-            .bodyToFlow<StationCatalogEntry>()
-    }
+    fun streamStationsBySector(sectorCode: String): Flow<StationCatalogEntry> = webClient.get()
+        .uri("/api/v1/stations/stream?sector={sector}", sectorCode)
+        .accept(MediaType.APPLICATION_NDJSON, MediaType.APPLICATION_JSON)
+        .retrieve()
+        .bodyToFlow<StationCatalogEntry>()
 }

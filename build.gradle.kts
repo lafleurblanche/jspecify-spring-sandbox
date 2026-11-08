@@ -46,6 +46,8 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("io.mockk:mockk:1.13.16")
+    testImplementation("io.projectreactor:reactor-test")
 }
 
 kotlin {
@@ -94,10 +96,9 @@ tasks.named("check") {
     dependsOn(tasks.named("spotlessCheck"))
 }
 
-tasks.named<org.gradle.api.tasks.testing.Test>("test") {
+tasks.withType<Test> {
     useJUnitPlatform()
-}
 
-tasks.named<org.gradle.api.tasks.testing.Test>("test") {
-    useJUnitPlatform()
+    // Java 21+ / Java 25 での ByteBuddy 動的エージェントロード警告を抑制
+    jvmArgs("-XX:+EnableDynamicAgentLoading")
 }

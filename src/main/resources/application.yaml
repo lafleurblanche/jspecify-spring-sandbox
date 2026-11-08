@@ -1,3 +1,6 @@
 spring:
   application:
     name: jspecify-spring-sandbox
+  threads:
+    virtual:
+      enabled: true
