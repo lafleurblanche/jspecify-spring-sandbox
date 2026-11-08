@@ -52,8 +52,8 @@ class StationAsyncCatalogServiceTest {
                         "staName": "試験駅A01",
                         "active": true
                     }
-                    """.trimIndent()
-                )
+                    """.trimIndent(),
+                ),
         )
 
         val result = service.fetchStationByCode("FRTHB00101")
@@ -72,7 +72,7 @@ class StationAsyncCatalogServiceTest {
             MockResponse()
                 .setResponseCode(404)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .setBody("{\"error\": \"Not Found\"}")
+                .setBody("{\"error\": \"Not Found\"}"),
         )
 
         val result = service.fetchStationByCode("UNKNOWN")
@@ -91,7 +91,7 @@ class StationAsyncCatalogServiceTest {
             MockResponse()
                 .setResponseCode(200)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_NDJSON_VALUE)
-                .setBody(ndjsonBody)
+                .setBody(ndjsonBody),
         )
 
         val flow = service.streamStationsBySector("THB")

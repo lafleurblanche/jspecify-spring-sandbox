@@ -46,7 +46,5 @@ class StationAsyncCatalogController(
      * @return 駅情報のストリーム (application/x-ndjson)
      */
     @GetMapping(path = ["/stream"], produces = [MediaType.APPLICATION_NDJSON_VALUE])
-    fun streamStations(@RequestParam sector: String): Flow<StationCatalogEntry> {
-        return catalogService.streamStationsBySector(sector)
-    }
+    fun streamStations(@RequestParam sector: String): Flow<StationCatalogEntry> = catalogService.streamStationsBySector(sector)
 }
