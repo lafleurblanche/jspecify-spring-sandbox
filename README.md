@@ -19,10 +19,14 @@ Java と Kotlin の相互運用における型安全性（プラットフォー�
    * ブロッキング I/O を排除したノンブロッキング外部 API 呼び出し。
    * Reactor `Flux` から Kotlin `Flow` へのバックプレッシャー維持変換（`bodyToFlow`）と NDJSON ストリーミング。
    * `WebClientResponseException.NotFound` による 404 時の安全な `null` 解決。
-5. **JVM 相互運用アノテーションによる Java 向け API 制御**:
+5. **Java 25 仮想スレッド (Virtual Threads) と Coroutines ディスパッチャの協調**:
+   * `Dispatchers.IO` / `Dispatchers.Default` と仮想スレッドディスパッチャ（`asCoroutineDispatcher()`）のコンテキスト追跡。
+6. **JVM 相互運用アノテーションによる Java 向け API 制御**:
    * `@JvmStatic`, `@JvmOverloads`, `@JvmSynthetic`, `@JvmName`, `@JvmField`, `@JvmInline`（Value Class）。
-6. **決定論的な非同期テスト基盤**:
-   * `MockWebServer` を用いた外部 API 依存のない高速かつ決定論的なコルーチン結合テスト（`runTest`）。
+7. **決定論的かつ軽量なテスト基盤**:
+   * `MockWebServer` を用いた外部 API 依存のない高速な非同期サービステスト。
+   * `WebTestClient.bindToController` と Reactor `StepVerifier` による非同期 REST エンドポイント（`suspend` / `Flow` NDJSON）の結合検証。
+   * `-XX:+EnableDynamicAgentLoading` 設定による Java 25 動的エージェントロード警告の抑制。
 
 ---
 
@@ -37,11 +41,13 @@ Java と Kotlin の相互運用における型安全性（プラットフォー�
 - **Code Quality & Documentation**:
   * [Spotless 7.0.2](https://github.com/diffplug/spotless) (`ktlint 1.5.0` + `palantirJavaFormat`)
   * [Dokka 2.0.0](https://kotl.in/dokka) (V2 Plugin Mode)
-- **Specifications & Testing**:
+- **Testing & Mocking**:
   * [JSpecify 1.0.0](https://jspecify.dev/) (`org.jspecify:jspecify`)
   * JetBrains Java Annotations (`org.jetbrains:annotations:26.0.2`)
   * OkHttp MockWebServer 4.12.0
   * Kotlinx Coroutines Test 1.10.1
+  * MockK 1.13.16 (`coEvery`, `every`)
+  * Reactor Test (`StepVerifier`)
 
 ---
 
@@ -57,35 +63,11 @@ Java と Kotlin の相互運用における型安全性（プラットフォー�
 | | `@JvmName` | Java 向け別名定義、型消去回避、Value Class 引数の名前マングリング回避。 |
 | | `toNullable()` / `toOptional()` | `Optional<T>` と `T?` を安全に相互変換する拡張関数。 |
 | | `@JvmSynthetic` / `@JvmField` | Java コンパイラからのアクセサ遮蔽、およびフィールド直アクセス化。 |
-| **非同期・外部連携層 (`services`)** | `WebClient` + `suspend` | `awaitBodyOrNull<T>()` による単一リソースの非同期中断・取得。 |
+| **非同期・外部連携層 (`services`, `configs`)** | `WebClientConfig` | 直接 `WebClient.builder()` を用いたシングルトン Bean 提供。 |
+| | `WebClient` + `suspend` | `awaitBodyOrNull<T>()` による単一リソースの非同期中断・取得。 |
 | | `WebClient` + `Flow<T>` | `bodyToFlow<T>()` により Reactor `Flux` を Kotlin `Flow` へ変換しストリーミング。 |
 | **Web API 層 (`controllers`)** | `@RestControllerAdvice` | RFC 7807 準拠の共通例外ハンドリング（400/500 の統一 JSON 返却）。 |
-| | CORS WebMvcConfigurer | プリフライト（OPTIONS）およびクロスオリジン通信の制御。 |
 | | `Flow` エンドポイント | `application/x-ndjson` メディアタイプによる非同期ストリーム直接返却。 |
-
----
-
-## 非同期ストリーミングのシーケンス構成
-
-```text
-Client (NDJSON Stream Request)
-   │
-   ▼
-[StationAsyncCatalogController] ── (return Flow<StationCatalogEntry>)
-   │
-   ▼
-[StationAsyncCatalogService]
-   │
-   ├── webClient.get()
-   │     .uri("/api/v1/stations/stream?sector={sector}")
-   │     .accept(MediaType.APPLICATION_NDJSON)
-   │     .retrieve()
-   │     .bodyToFlow<StationCatalogEntry>()  <── Flux から Flow への変換
-   │
-   ▼
-Upstream External API / MockWebServer
-
-```
 
 ---
 
@@ -96,58 +78,65 @@ src/
 ├── main/
 │   ├── java/net/konohana/sakuya/sandbox/
 │   │   ├── bridge/
-│   │   │   ├── package-info.java                # bridge 配下を @NullMarked 化
-│   │   │   └── KotlinBridgeConsumer.java        # Java から Kotlin を呼ぶ検証クラス
+│   │   │   ├── package-info.java                          # bridge 配下を @NullMarked 化
+│   │   │   └── KotlinBridgeConsumer.java                  # Java から Kotlin を呼ぶ検証クラス
 │   │   ├── domain/
-│   │   │   ├── package-info.java                # domain 配下を @NullMarked 化
-│   │   │   ├── FareCalculationEngine.java      # @Contract(pure=true) 純粋計算エンジン
-│   │   │   ├── InMemoryTicketRepository.java    # インメモリ状態管理リポジトリ
-│   │   │   └── StationCatalogLookupEngine.java  # Optional 返却・受領エンジン
+│   │   │   ├── package-info.java                          # domain 配下を @NullMarked 化
+│   │   │   ├── FareCalculationEngine.java                # @Contract(pure=true) 純粋計算エンジン
+│   │   │   ├── InMemoryTicketRepository.java              # インメモリ状態管理リポジトリ
+│   │   │   └── StationCatalogLookupEngine.java            # Optional 返却・受領エンジン
 │   │   └── models/
-│   │       ├── package-info.java                # models 配下を @NullMarked 化
-│   │       ├── LegacyStationDto.java            # @NullMarked 適用 DTO
-│   │       └── UnmarkedLegacyDto.java           # @NullUnmarked 適用 DTO
-│   └── kotlin/net/konohana/sakuya/sandbox/
-│       ├── SandboxApplication.kt                # Spring Boot エントリポイント
-│       ├── bridge/
-│       │   ├── OptionalExtensions.kt            # toNullable() / toOptional() 拡張
-│       │   ├── StationId.kt                     # @JvmInline value class
-│       │   ├── StationLookupBridge.kt           # @JvmName 経由の Optional ファサード
-│       │   ├── StationRouteResolver.kt          # Value Class 引数マングリング検証
-│       │   ├── SyntheticPropertyHolder.kt       # プロパティ Getter/Setter 遮蔽
-│       │   ├── TicketCodeFilter.kt              # 型消去対策関数
-│       │   ├── TicketCodeGenerator.kt           # @JvmStatic, @JvmOverloads
-│       │   └── TicketDirectAccessDto.kt         # @JvmField による生フィールドアクセス
-│       ├── configs/
-│       │   └── CorsWebConfig.kt                 # CORS 構成
-│       ├── controllers/
-│       │   ├── GlobalExceptionHandler.kt        # 共通例外ハンドラー
-│       │   ├── StationAsyncCatalogController.kt # suspend / Flow 非同期 REST API
-│       │   └── TicketIssueController.kt         # 発券 REST API
-│       ├── models/
-│       │   ├── ApiErrorResponse.kt              # エラーレスポンス DTO
-│       │   ├── IssueTicketRequest.kt            # 発券リクエスト DTO
-│       │   ├── IssueTicketResponse.kt           # 発券レスポンス DTO
-│       │   ├── StationCatalogEntry.kt           # 外部カタログ連携 DTO
-│       │   └── TicketIssueResult.kt             # 内部発券結果 Data Class
-│       └── services/
-│           ├── StationAsyncCatalogService.kt    # WebClient × Coroutines 非同期サービス
-│           ├── StationExternalLookupService.kt  # 外部駅検証スタブ
-│           └── TicketIssueService.kt            # 発券アプリケーションサービス
+│   │       ├── package-info.java                          # models 配下を @NullMarked 化
+│   │       ├── LegacyStationDto.java                      # @NullMarked 適用 DTO
+│   │       └── UnmarkedLegacyDto.java                     # @NullUnmarked 適用 DTO
+│   ├── kotlin/net/konohana/sakuya/sandbox/
+│   │   ├── JspecifySpringSandboxApplication.kt            # Spring Boot エントリポイント
+│   │   ├── bridge/
+│   │   │   ├── OptionalExtensions.kt                      # toNullable() / toOptional() 拡張
+│   │   │   ├── StationId.kt                               # @JvmInline value class
+│   │   │   ├── StationLookupBridge.kt                     # @JvmName 経由の Optional ファサード
+│   │   │   ├── StationRouteResolver.kt                    # Value Class 引数マングリング検証
+│   │   │   ├── SyntheticPropertyHolder.kt                 # プロパティ Getter/Setter 遮蔽
+│   │   │   ├── TicketCodeFilter.kt                        # 型消去対策関数
+│   │   │   ├── TicketCodeGenerator.kt                     # @JvmStatic, @JvmOverloads
+│   │   │   └── TicketDirectAccessDto.kt                   # @JvmField による生フィールドアクセス
+│   │   ├── configs/
+│   │   │   ├── CorsWebConfig.kt                           # CORS 構成
+│   │   │   └── WebClientConfig.kt                         # WebClient シングルトン構成
+│   │   ├── controllers/
+│   │   │   ├── GlobalExceptionHandler.kt                  # 共通例外ハンドラー (RFC 7807)
+│   │   │   ├── StationAsyncCatalogController.kt           # suspend / Flow 非同期 REST API
+│   │   │   └── TicketIssueController.kt                   # 発券 REST API
+│   │   ├── models/
+│   │   │   ├── ApiErrorResponse.kt                        # エラーレスポンス DTO
+│   │   │   ├── IssueTicketRequest.kt                      # 発券リクエスト DTO
+│   │   │   ├── IssueTicketResponse.kt                     # 発券レスポンス DTO
+│   │   │   ├── StationCatalogEntry.kt                     # 外部カタログ連携 DTO
+│   │   │   ├── ThreadExecutionSnapshot.kt                 # スレッド追跡 DTO
+│   │   │   └── TicketIssueResult.kt                       # 内部発券結果 Data Class
+│   │   └── services/
+│   │       ├── StationAsyncCatalogService.kt              # WebClient × Coroutines 非同期サービス
+│   │       ├── StationExternalLookupService.kt            # 外部駅検証スタブ
+│   │       ├── ThreadExecutionProbeService.kt             # 仮想スレッド/ディスパッチャ追跡サービス
+│   │       └── TicketIssueService.kt                      # 発券アプリケーションサービス
+│   └── resources/
+│       └── application.yml                                # spring.threads.virtual.enabled=true
 └── test/
     └── kotlin/net/konohana/sakuya/sandbox/
         ├── controllers/
-        │   └── TicketIssueControllerTest.kt     # 発券 API・CORS 結合テスト
+        │   ├── StationAsyncCatalogControllerIntegrationTest.kt # WebTestClient による非同期結合テスト
+        │   └── TicketIssueControllerTest.kt               # 発券 API・CORS 結合テスト
         ├── services/
-        │   └── StationAsyncCatalogServiceTest.kt# MockWebServer による Coroutines / Flow 検証
-        ├── JSpecifyNullnessContractTest.kt      # JSpecify による Null 契約テスト
-        ├── JvmFieldContractTest.kt              # @JvmField 検証テスト
-        ├── JvmInlineContractTest.kt             # @JvmInline アンボックス検証テスト
-        ├── JvmSyntheticPropertyVisibilityTest.kt# プロパティ遮蔽テスト
-        ├── JvmSyntheticVisibilityTest.kt        # バイトコード ACC_SYNTHETIC テスト
-        ├── KotlinBridgeConsumerTest.kt          # Java ⇄ Kotlin 相互運用テスト
-        ├── NullUnmarkedDtoContractTest.kt       # @NullUnmarked 回帰検証テスト
-        └── OptionalInteroperabilityContractTest.kt # Optional ⇄ Nullable 相互運用テスト
+        │   └── StationAsyncCatalogServiceTest.kt          # MockWebServer による Coroutines / Flow 検証
+        ├── JSpecifyNullnessContractTest.kt                # JSpecify による Null 契約テスト
+        ├── JvmFieldContractTest.kt                        # @JvmField 検証テスト
+        ├── JvmInlineContractTest.kt                       # @JvmInline アンボックス検証テスト
+        ├── JvmSyntheticPropertyVisibilityTest.kt          # プロパティ遮蔽テスト
+        ├── JvmSyntheticVisibilityTest.kt                  # バイトコード ACC_SYNTHETIC テスト
+        ├── KotlinBridgeConsumerTest.kt                    # Java ⇄ Kotlin 相互運用テスト
+        ├── NullUnmarkedDtoContractTest.kt                 # @NullUnmarked 回帰検証テスト
+        ├── OptionalInteroperabilityContractTest.kt        # Optional ⇄ Nullable 相互運用テスト
+        └── ThreadExecutionProbeServiceTest.kt             # 仮想スレッド協調挙動テスト
 
 ```
 
@@ -157,7 +146,7 @@ src/
 
 ### 1. コードフォーマット検証・適用 (Spotless)
 
-Java 25 環境下での安定動作のため、Java 側は `palantirJavaFormat`、Kotlin 側は `ktlint` を採用しています。
+Java 25 環境下でのコンパイラ内部 API 互換性を保つため、Java 側は `palantirJavaFormat`、Kotlin 側は `ktlint` を採用しています。
 
 ```bash
 # フォーマット違反のチェック
@@ -183,8 +172,14 @@ Dokka Gradle Plugin V2 モードにより、JavaDoc および KDoc を統合し�
 ### 3. テストの個別実行
 
 ```bash
-# 外部カタログ非同期通信（WebClient + Coroutines / Flow）のテスト
+# 非同期 Controller 結合テスト (WebTestClient + StepVerifier)
+./gradlew test --tests "net.konohana.sakuya.sandbox.controllers.StationAsyncCatalogControllerIntegrationTest"
+
+# 外部カタログ非同期サービス通信テスト (MockWebServer + Coroutines / Flow)
 ./gradlew test --tests "net.konohana.sakuya.sandbox.services.StationAsyncCatalogServiceTest"
+
+# Java 25 仮想スレッドと Coroutines ディスパッチャの協調挙動テスト
+./gradlew test --tests "net.konohana.sakuya.sandbox.ThreadExecutionProbeServiceTest"
 
 # Java Optional ⇄ Kotlin Nullable 境界検証テスト
 ./gradlew test --tests "net.konohana.sakuya.sandbox.OptionalInteroperabilityContractTest"
